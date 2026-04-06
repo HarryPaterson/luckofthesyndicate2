@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luck of the Syndicate</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cascadia+Code&display=swap');
+
+    h1 {
+      font-family: 'Cascadia Code', monospace;
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    canvas {
+      max-width: 100%;
+      margin: auto;
+      display: block;
+      width: 80%;
+    }
+
+    #pieChartCanvas {
+      margin-top: 20px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Luck of the Syndicate</h1>
+  <canvas id="barChartCanvas" height="400"></canvas>
+  <canvas id="pieChartCanvas" height="200"></canvas>
+
+  <script>
+    async function loadLotteryNumbers() {
+      const response = await fetch("https://raw.githubusercontent.com/HarryPaterson/luckofthesyndicate/main/merged_lottery_numbers.csv");
+      const text = await response.text();
+
+      return text
+        .split("\n")
+        .flatMap(row =>
+          row.split(",")
+            .map(n => parseInt(n.trim()))
+            .filter(n => !isNaN(n))
+        );
+    }
+
+    const people = {
+      'Harry': [32, 49],
+      'Paul': [21, 49, 1],
+      'Ben': [43, 4, 7],
+      'Charlie': [6, 22, 16],
+      'Joe': [18, 32],
+      'Olly': [13, 29],
+      'Dan': [5, 27],
+      'Ashley': [25, 17]
+    };
+
+    async function init() {
+      const lotteryNumbers = await loadLotteryNumbers();
+
+      const matchedCounts = {};
+      for (const name in people) {
+        matchedCounts[name] = people[name].filter(num => lotteryNumbers.includes(num)).length;
+      }
+
+      const totalMatched = Object.values(matchedCounts).reduce((acc, val) => acc + val, 0);
+      const percentageMatched = {};
+
+      for (const name in people) {
+        percentageMatched[name] = totalMatched > 0
+          ? ((matchedCounts[name] / totalMatched) * 100).toFixed(2)
+          : 0;
+      }
+
+      const colors = ['#FF5733', '#00FFFF', '#800080', '#008000', '#FFFF00', '#800000', '#000080', '#000000'];
+      const randomColors = colors.sort(() => Math.random() - 0.5);
+
+      const barChartCanvas = document.getElementById('barChartCanvas').getContext('2d');
+      new Chart(barChartCanvas, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(people),
+          datasets: [{
+            label: 'Matched Numbers Count',
+            data: Object.values(matchedCounts),
+            backgroundColor: randomColors,
+            borderColor: randomColors,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+
+      const pieChartCanvas = document.getElementById('pieChartCanvas').getContext('2d');
+      new Chart(pieChartCanvas, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(people),
+          datasets: [{
+            label: 'Percentage of Correct Matched Numbers',
+            data: Object.values(percentageMatched),
+            backgroundColor: randomColors,
+            borderColor: randomColors,
+            borderWidth: 1
+          }]
+        }
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
