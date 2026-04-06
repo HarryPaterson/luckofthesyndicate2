@@ -59,11 +59,21 @@
     async function init() {
       const lotteryNumbers = await loadLotteryNumbers();
 
+      // ✅ Build frequency map
+      const frequency = {};
+      lotteryNumbers.forEach(num => {
+        frequency[num] = (frequency[num] || 0) + 1;
+      });
+
+      // ✅ Count matches using frequency
       const matchedCounts = {};
       for (const name in people) {
-        matchedCounts[name] = people[name].filter(num => lotteryNumbers.includes(num)).length;
+        matchedCounts[name] = people[name].reduce((total, num) => {
+          return total + (frequency[num] || 0);
+        }, 0);
       }
 
+      // Calculate percentages
       const totalMatched = Object.values(matchedCounts).reduce((acc, val) => acc + val, 0);
       const percentageMatched = {};
 
@@ -73,9 +83,11 @@
           : 0;
       }
 
+      // Colors
       const colors = ['#FF5733', '#00FFFF', '#800080', '#008000', '#FFFF00', '#800000', '#000080', '#000000'];
       const randomColors = colors.sort(() => Math.random() - 0.5);
 
+      // Bar chart
       const barChartCanvas = document.getElementById('barChartCanvas').getContext('2d');
       new Chart(barChartCanvas, {
         type: 'bar',
@@ -101,6 +113,7 @@
         }
       });
 
+      // Pie chart
       const pieChartCanvas = document.getElementById('pieChartCanvas').getContext('2d');
       new Chart(pieChartCanvas, {
         type: 'pie',
